@@ -1,30 +1,17 @@
-# ═══════════════════════════════════════════════════════
-#  PIPELINE CI/CD — cicd-aula
-#
-#  O que acontece quando você faz git push:
-#
-#  1. GitHub detecta o push
-#  2. Terraform (simulado) verifica infra
-#  3. Docker constrói a imagem
-#  4. Testes automáticos rodam
-#  5. "Deploy" é simulado com sucesso
-# ═══════════════════════════════════════════════════════
-
 name: Pipeline CI/CD
 
-# ── GATILHO ──────────────────────────────────────────
-# A pipeline roda a cada push na branch "main"
+# GATILHO
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
-# ── JOBS (etapas da esteira) ─────────────────────────
+# JOBS (etapas da esteira)
 jobs:
 
-  # ETAPA 1 — Verificar infraestrutura
-  # (simulamos o Terraform aqui)
+  # 1 — Verificar infraestrutura
+  # (simulamos o Terraform)
   infra:
     name: Verificar infraestrutura
     runs-on: ubuntu-latest
@@ -43,12 +30,12 @@ jobs:
           echo ""
           echo "Infraestrutura OK! Nenhuma mudança necessária."
 
-  # ETAPA 2 — Build Docker
-  # Empacota o código em um contêiner
+  # 2 — Build Docker
+  # Empacota o código em um container
   build:
     name: Build Docker
     runs-on: ubuntu-latest
-    needs: infra          # <── só roda APÓS a etapa de infra passar
+    needs: infra
 
     steps:
       - name: Baixar o código
@@ -71,12 +58,11 @@ jobs:
           name: docker-image
           path: imagem.tar.gz
 
-  # ETAPA 3 — Testes automáticos
-  # Robôs tentam quebrar o código!
+  # 3 — Testes automáticos - Rôbos
   test:
     name: Testes automáticos
     runs-on: ubuntu-latest
-    needs: build          # <── só roda APÓS o build
+    needs: build
 
     steps:
       - name: Baixar o código
@@ -96,18 +82,18 @@ jobs:
 
       - name: Publicar relatório de cobertura
         uses: actions/upload-artifact@v4
-        if: always()        # publica mesmo se os testes falharem
+        if: always()
         with:
           name: relatorio-cobertura
           path: coverage/
 
-  # ETAPA 4 — Deploy
-  # Só roda se os testes passaram!
+  # 4 — Deploy
+  # Só roda se os testes passaram
   deploy:
     name: Deploy para produção
     runs-on: ubuntu-latest
-    needs: test           # <── só roda se TODOS os testes passaram
-    if: github.ref == 'refs/heads/main'   # só na branch main
+    needs: test
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Baixar imagem Docker
