@@ -1,0 +1,149 @@
+# ═══════════════════════════════════════════════════════
+#  PIPELINE CI/CD — cicd-aula
+#
+#  O que acontece quando você faz git push:
+#
+#  1. GitHub detecta o push
+#  2. Terraform (simulado) verifica infra
+#  3. Docker constrói a imagem
+#  4. Testes automáticos rodam
+#  5. "Deploy" é simulado com sucesso
+# ═══════════════════════════════════════════════════════
+
+name: 🚀 Pipeline CI/CD
+
+# ── GATILHO ──────────────────────────────────────────
+# A pipeline roda a cada push na branch "main"
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# ── JOBS (etapas da esteira) ─────────────────────────
+jobs:
+
+  # ════════════════════════════════════════
+  # ETAPA 1 — Verificar infraestrutura
+  # (simulamos o Terraform aqui)
+  # ════════════════════════════════════════
+  infra:
+    name: 🔧 Verificar infraestrutura
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Simular Terraform plan
+        run: |
+          echo "──────────────────────────────────"
+          echo "  Terraform v1.6.0"
+          echo "──────────────────────────────────"
+          echo "Lendo arquivos de configuração..."
+          sleep 2
+          echo ""
+          echo "Plan: 0 to add, 0 to change, 0 to destroy."
+          echo ""
+          echo "✅ Infraestrutura OK! Nenhuma mudança necessária."
+
+  # ════════════════════════════════════════
+  # ETAPA 2 — Build Docker
+  # Empacota o código em um contêiner
+  # ════════════════════════════════════════
+  build:
+    name: 📦 Build Docker
+    runs-on: ubuntu-latest
+    needs: infra          # <── só roda APÓS a etapa de infra passar
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Construir imagem Docker
+        run: |
+          echo "──────────────────────────────────"
+          echo "  Docker Build"
+          echo "──────────────────────────────────"
+          docker build -t cicd-aula:${{ github.sha }} .
+          echo ""
+          echo "✅ Imagem construída com sucesso!"
+          echo "   Tag: cicd-aula:${{ github.sha }}"
+
+      - name: Salvar imagem como artefato
+        run: docker save cicd-aula:${{ github.sha }} | gzip > imagem.tar.gz
+
+      - name: Fazer upload do artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: imagem.tar.gz
+
+  # ════════════════════════════════════════
+  # ETAPA 3 — Testes automáticos
+  # Robôs tentam quebrar o código!
+  # ════════════════════════════════════════
+  test:
+    name: 🤖 Testes automáticos
+    runs-on: ubuntu-latest
+    needs: build          # <── só roda APÓS o build
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: ▶ Rodar os testes
+        run: npm test
+
+      - name: Publicar relatório de cobertura
+        uses: actions/upload-artifact@v4
+        if: always()        # publica mesmo se os testes falharem
+        with:
+          name: relatorio-cobertura
+          path: coverage/
+
+  # ════════════════════════════════════════
+  # ETAPA 4 — Deploy
+  # Só roda se os testes passaram!
+  # ════════════════════════════════════════
+  deploy:
+    name: 🚀 Deploy para produção
+    runs-on: ubuntu-latest
+    needs: test           # <── só roda se TODOS os testes passaram
+    if: github.ref == 'refs/heads/main'   # só na branch main
+
+    steps:
+      - name: Baixar imagem Docker
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Carregar imagem
+        run: docker load < imagem.tar.gz
+
+      - name: Simular deploy com Kubernetes
+        run: |
+          echo "──────────────────────────────────────────"
+          echo "  Kubernetes Rolling Update"
+          echo "──────────────────────────────────────────"
+          echo ""
+          echo "Atualizando deployment/cicd-aula..."
+          sleep 1
+          echo "  Pod 1/3 → aguardando... ✅ pronto"
+          sleep 1
+          echo "  Pod 2/3 → aguardando... ✅ pronto"
+          sleep 1
+          echo "  Pod 3/3 → aguardando... ✅ pronto"
+          echo ""
+          echo "✅ Deploy concluído! Zero downtime."
+          echo "   Versão anterior removida."
+          echo "   URL: https://minha-app.exemplo.com"
