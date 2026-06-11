@@ -1,9 +1,7 @@
 const request = require('supertest');
 const app = require('../src/app');
 
-// -----------------------------------------------
 // TESTE 1 — Rota principal
-// -----------------------------------------------
 describe('GET /', () => {
   test('deve retornar status 200', async () => {
     const resposta = await request(app).get('/');
@@ -16,9 +14,7 @@ describe('GET /', () => {
   });
 });
 
-// -----------------------------------------------
 // TESTE 2 — Rota de soma
-// -----------------------------------------------
 describe('GET /soma', () => {
   test('deve somar 2 + 3 e retornar 5', async () => {
     const resposta = await request(app).get('/soma?a=2&b=3');
@@ -37,9 +33,7 @@ describe('GET /soma', () => {
   });
 });
 
-// -----------------------------------------------
 // TESTE 3 — Rota de saudação
-// -----------------------------------------------
 describe('GET /ola/:nome', () => {
   test('deve saudar pelo nome', async () => {
     const resposta = await request(app).get('/ola/Maria');
