@@ -12,16 +12,18 @@ app.get('/', (req, res) => {
   });
 });
 
-// Rota de soma (usada nos testes)
+// Rota de soma
 app.get('/soma', (req, res) => {
   const a = Number(req.query.a);
   const b = Number(req.query.b);
 
   if (isNaN(a) || isNaN(b)) {
-    return res.status(400).json({ erro: 'Parâmetros inválidos. Use ?a=5&b=3' });
+    return res.status(400).json({ erro:
+      'Parâmetros inválidos. Use ?a=5&b=3'
+    });
   }
 
-  res.json({ resultado: a + b });
+  res.json({ resultado: a - b });
 });
 
 // Rota de saudação
